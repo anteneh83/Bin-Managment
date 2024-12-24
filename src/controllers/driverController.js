@@ -2,7 +2,6 @@ const Driver = require('../models/Driver');
 const Record = require('../models/Record');
 const Bin = require('../models/Bin');
 
-// Get all drivers
 exports.getDrivers = async (req, res) => {
     try {
         const drivers = await Driver.find().populate('binAssignments', 'binId address status').populate('records');
@@ -21,7 +20,6 @@ exports.getDrivers = async (req, res) => {
     }
 };
 
-// Register a new driver
 exports.registerDriver = async (req, res) => {
     const apiKey = req.headers['x-api-key'];
     const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
@@ -44,21 +42,17 @@ exports.registerDriver = async (req, res) => {
     }
 };
 
-// Update driver details
 exports.updateDriver = async (req, res) => {
-    const apiKey = req.headers['x-api-key'];
-    const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
+    const { driverId } = req.body;  
 
-    if (apiKey !== ADMIN_API_KEY) {
-        return res.status(403).json({ error: 'Unauthorized access: Invalid API key' });
+    if (!driverId) {
+        return res.status(400).json({ error: 'Driver ID is required in the body' });
     }
-
-    const { driverId } = req.params;
 
     try {
         const updatedDriver = await Driver.findOneAndUpdate(
             { driverId },
-            { $set: req.body },
+            { $set: req.body },  
             { new: true, runValidators: true }
         );
 
@@ -71,6 +65,7 @@ exports.updateDriver = async (req, res) => {
         res.status(500).json({ error: `Failed to update driver: ${error.message}` });
     }
 };
+
 
 
 exports.updateDriverLocation = async (req, res) => {

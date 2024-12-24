@@ -59,7 +59,6 @@ exports.registerBin = async (req, res) => {
     }
 };
 
-
 exports.updateBinStatus = async (req, res) => {
     const { binId, currentFillLevel, latitude, longitude, address } = req.body;
     try {
@@ -136,7 +135,6 @@ exports.getBinStatus = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch bin data' });
     }
 };
-
 
 exports.modifyBinStatus = async (req, res) => {
     const apiKey = req.headers['x-api-key'];
