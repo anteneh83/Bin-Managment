@@ -13,39 +13,25 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-exports.updateDriverLocation = async (req, res) => {
-    const { driverId, latitude, longitude } = req.body;
-    try {
-        const driver = await Driver.findOneAndUpdate(
-            { driverId },
-            { location: { latitude, longitude }, lastUpdated: Date.now() },
-            { new: true }
-        );
-
-        if (driver) {
-            res.status(200).json({ message: 'Driver location updated', driver });
-        } else {
-            res.status(404).json({ error: 'Driver not found' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update driver location' });
-    }
-};
-
 
 exports.registerBin = async (req, res) => {
-    const apiKey = req.headers['x-api-key']; 
-    const ADMIN_API_KEY = process.env.ADMIN_API_KEY; 
+    const apiKey = req.headers['x-api-key'];
+    const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
 
     if (apiKey !== ADMIN_API_KEY) {
         return res.status(403).json({ error: 'Unauthorized access: Invalid API key' });
     }
 
-    const { binId, imageUrl, address, latitude, longitude, status = 'active', currentFillLevel = 0, lidStatus = 'closed' } = req.body;
-    
-    if (!imageUrl) {
-        return res.status(400).json({ error: 'Image URL is required' });
-    }
+    const {
+        binId,
+        imageUrl = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRO1P8EFDdCVnDCbSFVXry0OpmwHNxk2996RtYzcKFXgb2-pKFkNrx_yOdMv8WLlC0cdho&usqp=CAU',
+        address,
+        latitude,
+        longitude,
+        status = 'active',
+        currentFillLevel = 0,
+        lidStatus = 'closed',
+    } = req.body;
 
     try {
         const existingBin = await Bin.findOne({ binId });
@@ -73,6 +59,7 @@ exports.registerBin = async (req, res) => {
     }
 };
 
+
 exports.updateBinStatus = async (req, res) => {
     const { binId, currentFillLevel, latitude, longitude, address } = req.body;
     try {
@@ -85,7 +72,7 @@ exports.updateBinStatus = async (req, res) => {
         let nearestDriver = null;
         let minDistance = Infinity;
 
-        if (bin.currentFillLevel >= 80) {
+        if (bin.currentFillLevel >= 85) {
             console.log('Bin is full!');
             const drivers = await Driver.find();
 
@@ -147,5 +134,57 @@ exports.getBinStatus = async (req, res) => {
         res.status(200).json(bins);   
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch bin data' });
+    }
+};
+
+
+exports.modifyBinStatus = async (req, res) => {
+    const apiKey = req.headers['x-api-key'];
+    const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
+
+    if (apiKey !== ADMIN_API_KEY) {
+        return res.status(403).json({ error: 'Unauthorized access: Invalid API key' });
+    }
+
+    const DEFAULT_IMAGE_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRO1P8EFDdCVnDCbSFVXry0OpmwHNxk2996RtYzcKFXgb2-pKFkNrx_yOdMv8WLlC0cdho&usqp=CAU';
+    const {
+        binId,
+        currentFillLevel,
+        latitude,
+        longitude,
+        address,
+        assignedStatus = 'unassigned',
+    } = req.body;
+
+    try {
+        const existingBin = await Bin.findOne({ binId });
+
+        if (existingBin) {
+            existingBin.currentFillLevel = currentFillLevel;
+            existingBin.latitude = latitude;
+            existingBin.longitude = longitude;
+            existingBin.address = address;
+            existingBin.assignedStatus = assignedStatus;
+            existingBin.imageUrl = DEFAULT_IMAGE_URL;
+
+            const updatedBin = await existingBin.save();
+            return res.status(200).json({ message: 'Bin status updated successfully', bin: updatedBin });
+        }
+
+        const newBin = new Bin({
+            binId,
+            currentFillLevel,
+            latitude,
+            longitude,
+            address,
+            assignedStatus,
+            imageUrl: DEFAULT_IMAGE_URL,
+        });
+
+        const savedBin = await newBin.save();
+        return res.status(201).json({ message: 'Bin created successfully', bin: savedBin });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to modify bin status' });
     }
 };
