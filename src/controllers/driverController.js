@@ -4,7 +4,12 @@ const Bin = require('../models/Bin');
 
 exports.getDrivers = async (req, res) => {
     try {
-        const drivers = await Driver.find().populate('binAssignments', 'binId address status').populate('records');
+        const drivers = await Driver.find()
+            .populate('binAssignments') 
+            .populate({
+                path: 'records',
+                select: 'recordId binId action timestamp notes', // Select specific fields for records
+            }); 
 
         const driverData = drivers.map(driver => ({
             ...driver.toObject(),
@@ -65,8 +70,6 @@ exports.updateDriver = async (req, res) => {
         res.status(500).json({ error: `Failed to update driver: ${error.message}` });
     }
 };
-
-
 
 exports.updateDriverLocation = async (req, res) => {
     const { driverId, latitude, longitude } = req.body;
