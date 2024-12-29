@@ -71,7 +71,7 @@ exports.updateBinStatus = async (req, res) => {
         let nearestDriver = null;
         let minDistance = Infinity;
 
-        if (bin.currentFillLevel >= 85) {
+        if (bin.currentFillLevel >= 75) {
             console.log('Bin is full!');
             const drivers = await Driver.find();
 
